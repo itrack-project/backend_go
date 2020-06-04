@@ -1,0 +1,20 @@
+db.users.insertOne({
+    username: "lan",
+    password: "123",
+    name: "alan ortiz",
+    ci: 687565,
+    type: "admin",
+    active: true
+})
+
+db.checks.insertOne({
+    type: "IN",
+    status: "pending",
+    code: "soycodigo",
+    date_created: Date(),
+    user: "lan"
+})
+
+db.checks.find({
+    user: "lan"
+})
