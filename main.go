@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -19,7 +20,7 @@ type User struct {
 	Password string
 	Name     string
 	Ci       int
-	Typed    string
+	Typ      string
 	Active   bool
 }
 
@@ -46,28 +47,112 @@ func dbConnection() *mongo.Client {
 	fmt.Println("Connected to MongoDB!")
 	return client
 }
+func getUserByUsername(c *gin.Context) {
+	client := dbConnection()
+	defer client.Disconnect(context.TODO())
+	collection := client.Database("tracker").Collection("users")
 
+	name := c.Param("username")
+	var result User
+	filter := bson.D{{"username", name}}
+	err := collection.FindOne(context.TODO(), filter).Decode(&result)
+	if err != nil {
+		fmt.Printf("Document not found: %+v\n", result)
+		c.JSON(http.StatusNotFound, nil)
+	} else {
+		fmt.Printf("Found a single document: %+v\n", result)
+		c.JSON(http.StatusOK, result)
+	}
+
+}
+func newUser(c *gin.Context) {
+	client := dbConnection()
+	defer client.Disconnect(context.TODO())
+	collection := client.Database("tracker").Collection("users")
+	var user User
+	user.Name = c.PostForm("name")
+	user.Username = c.PostForm("username")
+	user.Password = c.PostForm("password")
+	user.Ci, _ = strconv.Atoi(c.PostForm("ci"))
+	user.Typ = c.PostForm("type")
+	user.Active, _ = strconv.ParseBool(c.PostForm("active"))
+	result, err := collection.InsertOne(context.TODO(), user)
+	if err != nil {
+		fmt.Printf("Document not found: %+v\n", result)
+		c.JSON(http.StatusNotFound, nil)
+	} else {
+		fmt.Printf("Found a single document: %+v\n", result)
+		c.JSON(http.StatusOK, result)
+	}
+}
+func getUsers(c *gin.Context) {
+	client := dbConnection()
+	defer client.Disconnect(context.TODO())
+	collection := client.Database("tracker").Collection("users")
+	cursor, err := collection.Find(context.TODO(), bson.M{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	var users []bson.M
+	if err = cursor.All(context.TODO(), &users); err != nil {
+		c.JSON(http.StatusNotFound, nil)
+	}
+	c.JSON(http.StatusOK, users)
+}
+func updateUserByUsername(c *gin.Context) {
+	client := dbConnection()
+	defer client.Disconnect(context.TODO())
+	collection := client.Database("tracker").Collection("users")
+	name := c.Param("username")
+	var user User
+	user.Name = c.PostForm("name")
+	user.Username = c.PostForm("username")
+	user.Password = c.PostForm("password")
+	user.Ci, _ = strconv.Atoi(c.PostForm("ci"))
+	user.Typ = c.PostForm("type")
+	user.Active, _ = strconv.ParseBool(c.PostForm("active"))
+	updatedUser := bson.D{
+		{"$set", bson.D{{"name", user.Name}}},
+		{"$set", bson.D{{"username", user.Username}}},
+		{"$set", bson.D{{"password", user.Password}}},
+		{"$set", bson.D{{"ci", user.Ci}}},
+		{"$set", bson.D{{"type", user.Typ}}},
+		{"$set", bson.D{{"active", user.Active}}}}
+	result, err := collection.UpdateOne(context.TODO(), bson.M{"username": name}, updatedUser)
+	if err != nil {
+		fmt.Printf("Document not found: %+v\n", err)
+		c.JSON(http.StatusNotFound, nil)
+	} else {
+		fmt.Printf("Found a single document: %+v\n", result)
+		c.JSON(http.StatusOK, result)
+	}
+
+}
+func deleteUserByUsername(c *gin.Context) {
+	client := dbConnection()
+	defer client.Disconnect(context.TODO())
+	name := c.Param("username")
+	filter := bson.D{{"username", name}}
+	collection := client.Database("tracker").Collection("users")
+	result, err := collection.DeleteMany(context.TODO(), filter)
+	if err != nil {
+		fmt.Printf("Document not found: %+v\n", err)
+		c.JSON(http.StatusNotFound, nil)
+	} else {
+		fmt.Printf("Found a single document: %+v\n", result)
+		c.JSON(http.StatusOK, result)
+	}
+}
 func main() {
 	//GIN
 	r := gin.Default()
-	client := dbConnection()
 	user := r.Group("/user")
 	{
-		user.GET("/:name", func(c *gin.Context) {
-			name := c.Param("name")
-			collection := client.Database("tracker").Collection("users")
-			var result User
-			filter := bson.D{{"username", name}}
-			err := collection.FindOne(context.TODO(), filter).Decode(&result)
-			if err != nil {
-				fmt.Printf("Document not found: %+v\n", result)
-				c.JSON(http.StatusNotFound, result)
-			} else {
-				fmt.Printf("Found a single document: %+v\n", result)
-				c.JSON(http.StatusOK, result)
-			}
-
-		})
+		user.GET("/", getUsers)
+		user.GET("/:username", getUserByUsername)
+		user.POST("/", newUser)
+		user.PATCH("/:username", updateUserByUsername)
+		user.DELETE("/:username", deleteUserByUsername)
 	}
 	r.Run(":3000")
 }
