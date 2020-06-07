@@ -13,6 +13,7 @@
 *.dll
 *.so
 *.dylib
+itrack
 
 # Test binary, built with `go test -c`
 *.test
@@ -34,5 +35,9 @@
 ### VisualStudioCode Patch ###
 # Ignore all local history of files
 .history
+
+
+###personal notes###
+notes.txt
 
 # End of https://www.toptal.com/developers/gitignore/api/go,visualstudiocode
