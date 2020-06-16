@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -27,11 +28,20 @@ type User struct {
 	Active   bool
 }
 
+const (
+	connectionStringTemplate = "mongodb://%s:%s@%s"
+)
+
 func dbConnection() *mongo.Client {
 	//MONGO
-	// Set client options
-	clientOptions := options.Client().ApplyURI("mongodb://root:example@localhost:27017")
 
+	// Set client options
+	username := os.Getenv("MONGODB_USERNAME")
+	password := os.Getenv("MONGODB_PASSWORD")
+	clusterEndpoint := os.Getenv("MONGODB_ENDPOINT")
+	connectionURI := fmt.Sprintf(connectionStringTemplate, username, password, clusterEndpoint)
+	//clientOptions := options.Client().ApplyURI("mongodb://root:example@localhost:27017")
+	clientOptions := options.Client().ApplyURI(connectionURI)
 	// Connect to MongoDB
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 

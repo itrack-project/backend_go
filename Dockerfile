@@ -28,7 +28,7 @@ RUN cp /build/main .
 
 # Build a small image
 FROM scratch
-
+EXPOSE 8080
 COPY --from=builder /dist/main /
 
 # Command to run
