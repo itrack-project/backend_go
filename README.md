@@ -2,7 +2,7 @@
 Itrack is a web system for tracking IN's and OUT's of authorized people to a physical infrastructure.
 
 # Backend 
-This repository contains the backend side written in Golang, it can be use as source code only and compiled manually, also it can be built in a container (Dockerfile provided). Additionally there is a docker-compose yml file for fast dev deployment with a mongo service included.
+This repository contains the backend side written in Golang, it can be use as source code only and compiled manually, also it can be built in a container (Dockerfile provided).For deployment, it is required a mongo service and pass env variables for user and password to connect database.
 
 ### Installation
 
